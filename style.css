@@ -11,7 +11,6 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
 }
 
 .container {
@@ -35,13 +34,17 @@ h1 {
     width: 500px;
     height: 500px;
     margin: 0 auto 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #wheel {
-    width: 100%;
-    height: 100%;
+    width: 500px;
+    height: 500px;
     border-radius: 50%;
     box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    display: block;
 }
 
 .pointer {
@@ -77,14 +80,42 @@ h1 {
 .spin-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
+}
+
+.footer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.legend {
+    text-align: left;
+    font-size: 16px;
+    color: #555;
+}
+
+.legend-item {
+    margin: 5px 0;
+}
+
+.fire {
+    font-size: 20px;
+    margin-right: 5px;
+}
+
+.ice {
+    font-size: 20px;
+    margin-right: 5px;
 }
 
 .result {
     font-size: 20px;
     color: #333;
     font-weight: bold;
-    min-height: 40px;
+    text-align: right;
+    max-width: 250px;
 }
 
 @media (max-width: 600px) {
@@ -93,6 +124,12 @@ h1 {
     }
     
     .wheel-container {
+        width: 300px;
+        height: 300px;
+        margin: 0 auto 20px;
+    }
+    
+    #wheel {
         width: 300px;
         height: 300px;
     }
@@ -106,8 +143,16 @@ h1 {
         font-size: 18px;
     }
     
-    .pointer {
-        font-size: 30px;
-        top: -15px;
+    .footer-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .legend {
+        text-align: center;
+    }
+    
+    .result {
+        text-align: center;
     }
 }
