@@ -3,7 +3,10 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Страница загрузилась!');
     
     // НАСТРОЙКИ - 10 секторов
-    const segments = Array(10).fill().map((_, i) => 'Сектор ' + (i + 1));
+    const segments = [
+        'Сектор 1', 'Сектор 2', 'Сектор 3', 'Сектор 4', 'Сектор 5',
+        'Сектор 6', 'Сектор 7', 'Сектор 8', 'Сектор 9', 'Сектор 10'
+    ];
     
     const colors = [
         '#F2DBE3', '#FAEDCD', '#F2DBE3', '#FAEDCD', 
@@ -45,36 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const spinBtn = document.getElementById('spinBtn');
     const resultDiv = document.getElementById('result');
     
-    // Проверяем, что canvas существует
-    if (!canvas) {
-        console.error('Canvas не найден!');
-        return;
-    }
-    
-    // Устанавливаем размеры canvas
-    const size = Math.min(window.innerWidth * 0.8, 400);
-    canvas.width = size;
-    canvas.height = size;
-    
     let rotation = 0;
     let spinning = false;
-    
-    // Звуки (если папка sounds есть)
-    let spinAudio = null;
-    let stopAudio = null;
-    
-    function initSounds() {
-        try {
-            spinAudio = new Audio('sounds/spin.mp3');
-            spinAudio.loop = true;
-            spinAudio.volume = 0.2;
-        } catch(e) { console.log('Звук вращения не загружен'); }
-        
-        try {
-            stopAudio = new Audio('sounds/stop.mp3');
-            stopAudio.volume = 0.3;
-        } catch(e) { console.log('Звук остановки не загружен'); }
-    }
     
     // Загружаем картинки для секторов
     const sectorImagesList = [];
@@ -110,18 +85,18 @@ document.addEventListener('DOMContentLoaded', function() {
             left: 50%;
             transform: translate(-50%, -50%);
             background: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.3);
             text-align: center;
             z-index: 1000;
             min-width: 280px;
-            max-width: 90%;
-            width: auto;
-            border: 3px solid #ff99cc;
+            max-width: 350px;
+            border: 4px solid #ff99cc;
+            animation: popupFadeIn 0.3s ease-out;
         `;
         
-        let syrupsHtml = '<div style="display: flex; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap;">';
+        let syrupsHtml = '<div style="display: flex; justify-content: center; gap: 15px; margin: 20px 0; flex-wrap: wrap;">';
         
         for (let i = 0; i < prize.syrups.length; i++) {
             const syrup = prize.syrups[i];
@@ -130,9 +105,9 @@ document.addEventListener('DOMContentLoaded', function() {
             syrupsHtml += `
                 <div style="text-align: center; width: 80px;">
                     <img src="syrup_images/${imageName}" alt="${syrup}" 
-                         style="width: 60px; height: 60px; object-fit: contain; border-radius: 12px; background: #f8f8f8; padding: 5px;"
-                         onerror="this.style.display='none'; this.parentElement.querySelector('.syrup-name').style.marginTop = '0';">
-                    <div class="syrup-name" style="font-size: 11px; font-weight: bold; color: #666; margin-top: 5px;">${syrup}</div>
+                         style="width: 70px; height: 70px; object-fit: contain; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 8px; background: #f8f8f8; padding: 5px;"
+                         onerror="this.style.display='none';">
+                    <div style="font-size: 12px; font-weight: bold; color: #666;">${syrup}</div>
                 </div>
             `;
         }
@@ -140,30 +115,48 @@ document.addEventListener('DOMContentLoaded', function() {
         syrupsHtml += '</div>';
         
         popup.innerHTML = `
-            <h3 style="margin: 0 0 5px 0; color: #ff3399;">🎉 Ваша комбинация! 🎉</h3>
-            <h2 style="font-size: 18px; margin: 10px 0; color: #333;">${prize.name}</h2>
+            <h3 style="margin-top: 0; margin-bottom: 10px; color: #ff3399;">🎉 Ваша комбинация! 🎉</h3>
+            <h2 style="font-size: 20px; margin: 10px 0; color: #333;">${prize.name}</h2>
             ${syrupsHtml}
             <button id="closePopupBtn" style="
                 background: linear-gradient(135deg, #ff99cc 0%, #ff66b2 100%);
                 color: white;
                 border: none;
-                padding: 10px 25px;
-                font-size: 16px;
+                padding: 12px 30px;
+                font-size: 18px;
                 border-radius: 50px;
                 cursor: pointer;
                 font-weight: bold;
-                margin-top: 10px;
+                margin-top: 15px;
+                box-shadow: 0 5px 15px rgba(255,102,178,0.3);
             ">ЗАКРЫТЬ</button>
         `;
         
         document.body.appendChild(popup);
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes popupFadeIn {
+                from {
+                    opacity: 0;
+                    transform: translate(-50%, -30%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%);
+                }
+            }
+        `;
+        document.head.appendChild(style);
         
         document.getElementById('closePopupBtn').onclick = function() {
             popup.remove();
         };
         
         popup.addEventListener('click', function(e) {
-            if (e.target === popup) popup.remove();
+            if (e.target === popup) {
+                popup.remove();
+            }
         });
     }
     
@@ -172,7 +165,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const ctx = canvas.getContext('2d');
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const radius = canvas.width / 2 - 10;
+        const radius = 200;
         
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -187,33 +180,35 @@ document.addEventListener('DOMContentLoaded', function() {
             ctx.moveTo(centerX, centerY);
             ctx.arc(centerX, centerY, radius, startAngle, endAngle);
             ctx.closePath();
-            ctx.fillStyle = colors[i % colors.length];
+            ctx.fillStyle = colors[i];
             ctx.fill();
             ctx.strokeStyle = 'white';
             ctx.lineWidth = 2;
             ctx.stroke();
         }
         
-        // Рисуем картинки
+        // Рисуем картинки поверх секторов
         for (let i = 0; i < segments.length; i++) {
             const startAngle = i * anglePerSegment + rotation;
             
             if (sectorImagesList[i] && sectorImagesList[i].complete && sectorImagesList[i].src) {
                 try {
                     ctx.save();
-                    const imgX = centerX + Math.cos(startAngle + anglePerSegment/2) * (radius * 0.6);
-                    const imgY = centerY + Math.sin(startAngle + anglePerSegment/2) * (radius * 0.6);
+                    const imgX = centerX + Math.cos(startAngle + anglePerSegment/2) * 130;
+                    const imgY = centerY + Math.sin(startAngle + anglePerSegment/2) * 130;
                     ctx.translate(imgX, imgY);
                     ctx.rotate(startAngle + anglePerSegment/2 + Math.PI/2);
-                    ctx.drawImage(sectorImagesList[i], -25, -25, 50, 50);
+                    ctx.drawImage(sectorImagesList[i], -30, -30, 60, 60);
                     ctx.restore();
-                } catch(e) {}
+                } catch (e) {
+                    console.log('Ошибка картинки', i);
+                }
             }
         }
         
-        // Центр колеса
+        // Рисуем центр колеса
         ctx.beginPath();
-        ctx.arc(centerX, centerY, 18, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
         ctx.fillStyle = '#E8D1D9';
         ctx.fill();
         ctx.strokeStyle = '#F0E3C3';
@@ -223,20 +218,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Функция вращения
     function spin() {
+        console.log('Кнопка нажата!');
+        
         if (spinning) return;
         
         spinning = true;
         spinBtn.disabled = true;
         resultDiv.textContent = 'Крутится...';
         
-        if (spinAudio) {
-            spinAudio.currentTime = 0;
-            spinAudio.play().catch(e => {});
-        }
-        
+        const randomStopAngle = Math.random() * Math.PI * 2;
         const randomRotations = 8 + Math.floor(Math.random() * 5);
         const fullRotations = randomRotations * Math.PI * 2;
-        const randomStopAngle = Math.random() * Math.PI * 2;
         
         const startRotation = rotation;
         const startNormalized = ((startRotation % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
@@ -247,14 +239,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const targetRotation = startRotation + fullRotations + delta;
         const startTime = Date.now();
-        const duration = 7000;
         
         function animate() {
             const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / duration, 1);
-            const easeOut = 1 - Math.pow(1 - progress, 3);
+            const progress = Math.min(elapsed / 7000, 1);
             
-            rotation = startRotation + (targetRotation - startRotation) * easeOut;
+            rotation = startRotation + (targetRotation - startRotation) * (1 - Math.pow(1 - progress, 3));
             draw();
             
             if (progress < 1) {
@@ -263,50 +253,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 spinning = false;
                 spinBtn.disabled = false;
                 
-                if (spinAudio) {
-                    spinAudio.pause();
-                    spinAudio.currentTime = 0;
-                }
-                
-                if (stopAudio) {
-                    stopAudio.currentTime = 0;
-                    stopAudio.play().catch(e => {});
-                }
-                
                 const randomIndex = Math.floor(Math.random() * syrupPrizes.length);
                 const prize = syrupPrizes[randomIndex];
                 
-                resultDiv.textContent = '🍹 ' + prize.name;
+                resultDiv.textContent = 'Выигрыш: ' + prize.name;
                 showSyrupPopup(prize);
                 
-                console.log('Выигрыш:', prize.name);
+                console.log('Результат:', prize.name);
             }
         }
         
         animate();
     }
     
-    // Инициализация
-    function init() {
-        draw();
-        initSounds();
-        spinBtn.onclick = spin;
+    // Начальное рисование
+    draw();
+    
+    // Привязываем кнопку
+    spinBtn.onclick = spin;
+    
+    // Инициализация Telegram
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
         
-        // Telegram
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
-        }
-        
-        // Адаптация при изменении размера
-        window.addEventListener('resize', function() {
-            const newSize = Math.min(window.innerWidth * 0.8, 400);
-            canvas.width = newSize;
-            canvas.height = newSize;
+        setTimeout(function() {
             draw();
+            console.log('Принудительная перерисовка для Telegram');
+        }, 100);
+        
+        window.Telegram.WebApp.onEvent('themeChanged', function() {
+            draw();
+            console.log('Перерисовка после смены темы');
         });
     }
     
-    init();
-    console.log('Рулетка готова!');
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            draw();
+            console.log('Перерисовка после полной загрузки');
+        }, 200);
+    });
+    
+    console.log('Готово!');
 });
