@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function() {
         syrupsHtml += '</div>';
         
         popup.innerHTML = `
-            <h3 style="margin-top: 0; margin-bottom: 10px; color: #a7afb6;">Ваша комбинация!</h3>
+            <h3 style="margin-top: 0; margin-bottom: 10px; color: #a7afb6;">Ваша комбинация:</h3>
             <h2 style="font-size: 20px; margin: 10px 0; color: #333;">${prize.name}</h2>
             ${syrupsHtml}
             <button id="closePopupBtn" style="
