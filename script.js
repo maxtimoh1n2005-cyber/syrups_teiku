@@ -224,6 +224,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         spinning = true;
         spinBtn.disabled = true;
+        
+        // Добавляем класс для центрирования надписи
+        resultDiv.classList.add('spinning');
         resultDiv.textContent = 'Крутится...';
         
         const randomStopAngle = Math.random() * Math.PI * 2;
@@ -256,6 +259,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const randomIndex = Math.floor(Math.random() * syrupPrizes.length);
                 const prize = syrupPrizes[randomIndex];
                 
+                // Убираем класс центрирования и показываем результат
+                resultDiv.classList.remove('spinning');
                 resultDiv.textContent = 'Выигрыш: ' + prize.name;
                 showSyrupPopup(prize);
                 
