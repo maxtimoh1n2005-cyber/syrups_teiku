@@ -106,7 +106,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div style="text-align: center; width: 80px;">
                     <img src="syrup_images/${imageName}" alt="${syrup}" 
                          style="width: 70px; height: 70px; object-fit: contain; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); margin-bottom: 8px; background: #f8f8f8; padding: 5px;"
-                         onerror="this.style.display='none';">
+                         onerror="this.style.display='none'; console.log('Картинка не найдена: syrup_images/${imageName}');">
                     <div style="font-size: 12px; font-weight: bold; color: #666;">${syrup}</div>
                 </div>
             `;
