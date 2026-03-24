@@ -2,6 +2,104 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Страница загрузилась!');
     
+    // НОВОЕ: Создаём аудио элементы
+    let spinAudio = null;
+    let stopAudio = null;
+    
+    // НОВОЕ: Функция загрузки и воспроизведения звука
+    function playSpinSound() {
+        if (!spinAudio) {
+            spinAudio = new Audio('sounds/spin.mp3');
+            spinAudio.loop = true; // Зацикливаем звук вращения
+        }
+        spinAudio.currentTime = 0;
+        spinAudio.play().catch(e => console.log('Ошибка воспроизведения spin.mp3:', e));
+    }
+    
+    function stopSpinSound() {
+        if (spinAudio) {
+            spinAudio.pause();
+            spinAudio.currentTime = 0;
+        }
+    }
+    
+    function playStopSound() {
+        if (!stopAudio) {
+            // Создаём звук остановки через Web Audio API (работает везде)
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 880;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            stopAudio = true; // Сохраняем флаг, что звук уже создан
+        } else if (stopAudio !== true) {
+            // Альтернативный звук через AudioContext
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 880;
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch(e) {
+                console.log('Ошибка воспроизведения звука остановки:', e);
+            }
+        } else {
+            // Если звук уже создан, создаём новый для остановки
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 880;
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch(e) {
+                console.log('Ошибка воспроизведения звука остановки:', e);
+            }
+        }
+    }
+    
+    // НОВОЕ: Разрешаем аудио после первого взаимодействия пользователя
+    function enableAudio() {
+        // Создаём и сразу останавливаем пустой звук для разблокировки AudioContext
+        const tempContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (tempContext.state === 'suspended') {
+            tempContext.resume();
+        }
+        // Удаляем обработчик после первого клика
+        document.removeEventListener('click', enableAudio);
+        document.removeEventListener('touchstart', enableAudio);
+    }
+    
+    document.addEventListener('click', enableAudio);
+    document.addEventListener('touchstart', enableAudio);
+    
     // НАСТРОЙКИ - 10 секторов
     const segments = [
         'Сектор 1', 'Сектор 2', 'Сектор 3', 'Сектор 4', 'Сектор 5',
@@ -225,6 +323,9 @@ document.addEventListener('DOMContentLoaded', function() {
         spinning = true;
         spinBtn.disabled = true;
         
+        // НОВОЕ: Включаем звук вращения
+        playSpinSound();
+        
         // Добавляем класс для центрирования надписи
         resultDiv.classList.add('spinning');
         resultDiv.textContent = 'Крутится...';
@@ -255,6 +356,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 spinning = false;
                 spinBtn.disabled = false;
+                
+                // НОВОЕ: Останавливаем звук вращения и проигрываем звук остановки
+                stopSpinSound();
+                playStopSound();
                 
                 const randomIndex = Math.floor(Math.random() * syrupPrizes.length);
                 const prize = syrupPrizes[randomIndex];
