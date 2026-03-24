@@ -51,95 +51,77 @@ document.addEventListener('DOMContentLoaded', function() {
     let rotation = 0;
     let spinning = false;
     
-    // НОВОЕ: Аудио переменные
-    let spinAudio = null;
-    let audioUnlocked = false;
+    // === ЗВУКОВЫЕ ЭФФЕКТЫ ===
+    let spinSoundObj = null;
+    let playStopSound = null;
+    let soundEnabled = true;
     
-    // НОВОЕ: Функция для разблокировки аудио (обязательно для Telegram)
-    function unlockAudio() {
-        if (audioUnlocked) return;
+    // ЗВУК ВРАЩЕНИЯ ИЗ MP3 ФАЙЛА
+    function createSpinSound() {
+        if (!soundEnabled) return null;
         
-        // Создаём временный AudioContext для разблокировки
-        const tempContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (tempContext.state === 'suspended') {
-            tempContext.resume();
-        }
-        
-        // Создаём и пробуем воспроизвести короткий звук
-        const silentAudio = new Audio();
-        silentAudio.volume = 0;
-        silentAudio.play().then(() => {
-            console.log('Аудио разблокировано');
-            audioUnlocked = true;
-            // Предзагружаем spin.mp3
-            spinAudio = new Audio('sounds/spin.mp3');
-            spinAudio.loop = true;
-            spinAudio.load();
-        }).catch(e => console.log('Разблокировка аудио:', e));
-        
-        // Удаляем обработчики
-        document.removeEventListener('click', unlockAudio);
-        document.removeEventListener('touchstart', unlockAudio);
-        document.removeEventListener('keydown', unlockAudio);
-    }
-    
-    // НОВОЕ: Воспроизведение звука вращения
-    function playSpinSound() {
-        if (!audioUnlocked) return;
-        
-        if (spinAudio) {
-            spinAudio.currentTime = 0;
-            spinAudio.volume = 0.5;
-            spinAudio.play().catch(e => console.log('Ошибка spin.mp3:', e));
-        } else {
-            // Если аудио ещё не загружено, создаём
-            spinAudio = new Audio('sounds/spin.mp3');
-            spinAudio.loop = true;
-            spinAudio.volume = 0.5;
-            spinAudio.load();
-            spinAudio.play().catch(e => console.log('Ошибка загрузки spin.mp3:', e));
-        }
-    }
-    
-    // НОВОЕ: Остановка звука вращения
-    function stopSpinSound() {
-        if (spinAudio) {
-            spinAudio.pause();
-            spinAudio.currentTime = 0;
-        }
-    }
-    
-    // НОВОЕ: Звук остановки
-    function playStopSound() {
         try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audio = new Audio();
+            audio.src = 'sounds/spin.mp3';
+            audio.loop = true;
+            audio.volume = 0.2;
             
-            // Разблокируем контекст если нужно
-            if (audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.type = 'sine';
-            oscillator.frequency.value = 880;
-            gainNode.gain.value = 0.3;
-            
-            oscillator.start();
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-            oscillator.stop(audioContext.currentTime + 0.3);
-            
-            // Автоматически закрываем контекст после завершения
-            setTimeout(() => {
-                audioContext.close();
-            }, 500);
+            return {
+                start: function() {
+                    audio.play().catch(e => console.log('Ошибка воспроизведения MP3:', e));
+                },
+                stop: function() {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            };
         } catch (e) {
-            console.log('Ошибка звука остановки:', e);
+            console.log('Ошибка загрузки MP3:', e);
+            return null;
         }
+    }
+    
+    // ЗВУК ОСТАНОВКИ
+    function createStopSound() {
+        if (!soundEnabled) return null;
+        
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
+            
+            return function() {
+                const now = audioCtx.currentTime;
+                const oscillator = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                oscillator.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 880;
+                
+                gain.gain.value = 0;
+                gain.gain.exponentialRampToValueAtTime(0.4, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+                
+                oscillator.start();
+                oscillator.stop(now + 0.5);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            };
+        } catch (e) {
+            console.log('Ошибка инициализации звука остановки:', e);
+            return null;
+        }
+    }
+    
+    // Инициализация звуков
+    function initSounds() {
+        spinSoundObj = createSpinSound();
+        playStopSound = createStopSound();
+        console.log('Звуки инициализированы (MP3 вращение + динь остановки)');
     }
     
     // Загружаем картинки для секторов
@@ -316,8 +298,10 @@ document.addEventListener('DOMContentLoaded', function() {
         spinning = true;
         spinBtn.disabled = true;
         
-        // НОВОЕ: Включаем звук вращения (если аудио разблокировано)
-        playSpinSound();
+        // ВКЛЮЧАЕМ ЗВУК ВРАЩЕНИЯ (MP3)
+        if (spinSoundObj) {
+            spinSoundObj.start();
+        }
         
         // Добавляем класс для центрирования надписи
         resultDiv.classList.add('spinning');
@@ -350,9 +334,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 spinning = false;
                 spinBtn.disabled = false;
                 
-                // НОВОЕ: Останавливаем звук вращения и проигрываем звук остановки
-                stopSpinSound();
-                playStopSound();
+                // ВЫКЛЮЧАЕМ ЗВУК ВРАЩЕНИЯ
+                if (spinSoundObj) {
+                    spinSoundObj.stop();
+                }
+                
+                // ВКЛЮЧАЕМ ЗВУК ОСТАНОВКИ
+                if (playStopSound) {
+                    playStopSound();
+                }
                 
                 const randomIndex = Math.floor(Math.random() * syrupPrizes.length);
                 const prize = syrupPrizes[randomIndex];
@@ -372,23 +362,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Начальное рисование
     draw();
     
+    // Инициализируем звуки
+    initSounds();
+    
     // Привязываем кнопку
     spinBtn.onclick = spin;
     
-    // НОВОЕ: Разблокировка аудио при первом взаимодействии
-    document.addEventListener('click', unlockAudio);
-    document.addEventListener('touchstart', unlockAudio);
-    document.addEventListener('keydown', unlockAudio);
-    
-    // НОВОЕ: Также пытаемся разблокировать через Telegram
+    // Инициализация Telegram
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
-        
-        // Разблокируем аудио через Telegram
-        window.Telegram.WebApp.onEvent('viewportChanged', function() {
-            unlockAudio();
-        });
         
         setTimeout(function() {
             draw();
