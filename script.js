@@ -209,9 +209,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Рисуем центр колеса
         ctx.beginPath();
         ctx.arc(centerX, centerY, 15, 0, Math.PI * 2);
-        ctx.fillStyle = '#E8D1D9';
+        ctx.fillStyle = '#e6b3c5';
         ctx.fill();
-        ctx.strokeStyle = '#F0E3C3';
+        ctx.strokeStyle = '#fffefa';
         ctx.lineWidth = 2;
         ctx.stroke();
     }
