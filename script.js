@@ -2,104 +2,6 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Страница загрузилась!');
     
-    // НОВОЕ: Создаём аудио элементы
-    let spinAudio = null;
-    let stopAudio = null;
-    
-    // НОВОЕ: Функция загрузки и воспроизведения звука
-    function playSpinSound() {
-        if (!spinAudio) {
-            spinAudio = new Audio('sounds/spin.mp3');
-            spinAudio.loop = true; // Зацикливаем звук вращения
-        }
-        spinAudio.currentTime = 0;
-        spinAudio.play().catch(e => console.log('Ошибка воспроизведения spin.mp3:', e));
-    }
-    
-    function stopSpinSound() {
-        if (spinAudio) {
-            spinAudio.pause();
-            spinAudio.currentTime = 0;
-        }
-    }
-    
-    function playStopSound() {
-        if (!stopAudio) {
-            // Создаём звук остановки через Web Audio API (работает везде)
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.type = 'sine';
-            oscillator.frequency.value = 880;
-            gainNode.gain.value = 0.3;
-            
-            oscillator.start();
-            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-            oscillator.stop(audioContext.currentTime + 0.3);
-            
-            stopAudio = true; // Сохраняем флаг, что звук уже создан
-        } else if (stopAudio !== true) {
-            // Альтернативный звук через AudioContext
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 880;
-                gainNode.gain.value = 0.3;
-                
-                oscillator.start();
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-                oscillator.stop(audioContext.currentTime + 0.3);
-            } catch(e) {
-                console.log('Ошибка воспроизведения звука остановки:', e);
-            }
-        } else {
-            // Если звук уже создан, создаём новый для остановки
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.value = 880;
-                gainNode.gain.value = 0.3;
-                
-                oscillator.start();
-                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
-                oscillator.stop(audioContext.currentTime + 0.3);
-            } catch(e) {
-                console.log('Ошибка воспроизведения звука остановки:', e);
-            }
-        }
-    }
-    
-    // НОВОЕ: Разрешаем аудио после первого взаимодействия пользователя
-    function enableAudio() {
-        // Создаём и сразу останавливаем пустой звук для разблокировки AudioContext
-        const tempContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (tempContext.state === 'suspended') {
-            tempContext.resume();
-        }
-        // Удаляем обработчик после первого клика
-        document.removeEventListener('click', enableAudio);
-        document.removeEventListener('touchstart', enableAudio);
-    }
-    
-    document.addEventListener('click', enableAudio);
-    document.addEventListener('touchstart', enableAudio);
-    
     // НАСТРОЙКИ - 10 секторов
     const segments = [
         'Сектор 1', 'Сектор 2', 'Сектор 3', 'Сектор 4', 'Сектор 5',
@@ -148,6 +50,97 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let rotation = 0;
     let spinning = false;
+    
+    // НОВОЕ: Аудио переменные
+    let spinAudio = null;
+    let audioUnlocked = false;
+    
+    // НОВОЕ: Функция для разблокировки аудио (обязательно для Telegram)
+    function unlockAudio() {
+        if (audioUnlocked) return;
+        
+        // Создаём временный AudioContext для разблокировки
+        const tempContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (tempContext.state === 'suspended') {
+            tempContext.resume();
+        }
+        
+        // Создаём и пробуем воспроизвести короткий звук
+        const silentAudio = new Audio();
+        silentAudio.volume = 0;
+        silentAudio.play().then(() => {
+            console.log('Аудио разблокировано');
+            audioUnlocked = true;
+            // Предзагружаем spin.mp3
+            spinAudio = new Audio('sounds/spin.mp3');
+            spinAudio.loop = true;
+            spinAudio.load();
+        }).catch(e => console.log('Разблокировка аудио:', e));
+        
+        // Удаляем обработчики
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+        document.removeEventListener('keydown', unlockAudio);
+    }
+    
+    // НОВОЕ: Воспроизведение звука вращения
+    function playSpinSound() {
+        if (!audioUnlocked) return;
+        
+        if (spinAudio) {
+            spinAudio.currentTime = 0;
+            spinAudio.volume = 0.5;
+            spinAudio.play().catch(e => console.log('Ошибка spin.mp3:', e));
+        } else {
+            // Если аудио ещё не загружено, создаём
+            spinAudio = new Audio('sounds/spin.mp3');
+            spinAudio.loop = true;
+            spinAudio.volume = 0.5;
+            spinAudio.load();
+            spinAudio.play().catch(e => console.log('Ошибка загрузки spin.mp3:', e));
+        }
+    }
+    
+    // НОВОЕ: Остановка звука вращения
+    function stopSpinSound() {
+        if (spinAudio) {
+            spinAudio.pause();
+            spinAudio.currentTime = 0;
+        }
+    }
+    
+    // НОВОЕ: Звук остановки
+    function playStopSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Разблокируем контекст если нужно
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 880;
+            gainNode.gain.value = 0.3;
+            
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.3);
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            // Автоматически закрываем контекст после завершения
+            setTimeout(() => {
+                audioContext.close();
+            }, 500);
+        } catch (e) {
+            console.log('Ошибка звука остановки:', e);
+        }
+    }
     
     // Загружаем картинки для секторов
     const sectorImagesList = [];
@@ -323,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
         spinning = true;
         spinBtn.disabled = true;
         
-        // НОВОЕ: Включаем звук вращения
+        // НОВОЕ: Включаем звук вращения (если аудио разблокировано)
         playSpinSound();
         
         // Добавляем класс для центрирования надписи
@@ -382,10 +375,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Привязываем кнопку
     spinBtn.onclick = spin;
     
-    // Инициализация Telegram
+    // НОВОЕ: Разблокировка аудио при первом взаимодействии
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('touchstart', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
+    
+    // НОВОЕ: Также пытаемся разблокировать через Telegram
     if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.ready();
         window.Telegram.WebApp.expand();
+        
+        // Разблокируем аудио через Telegram
+        window.Telegram.WebApp.onEvent('viewportChanged', function() {
+            unlockAudio();
+        });
         
         setTimeout(function() {
             draw();
